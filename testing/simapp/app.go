@@ -2,6 +2,9 @@ package simapp
 
 import (
 	"encoding/json"
+	"github.com/cosmos/cosmos-sdk/x/accumulator"
+	accumulatorkeeper "github.com/cosmos/cosmos-sdk/x/accumulator/keeper"
+	accumulatortypes "github.com/cosmos/cosmos-sdk/x/accumulator/types"
 	"io"
 	"net/http"
 	"os"
@@ -131,6 +134,8 @@ var (
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
 	ModuleBasics = module.NewBasicManager(
+		accumulator.AppModuleBasic{},
+
 		auth.AppModuleBasic{},
 		genutil.AppModuleBasic{},
 		bank.AppModuleBasic{},
@@ -166,6 +171,7 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
+		accumulatortypes.ModuleName:    {authtypes.Minter, authtypes.Staking, authtypes.Burner},
 		authtypes.FeeCollectorName:     nil,
 		distrtypes.ModuleName:          nil,
 		minttypes.ModuleName:           {authtypes.Minter},
@@ -201,6 +207,7 @@ type SimApp struct {
 	memKeys map[string]*storetypes.MemoryStoreKey
 
 	// keepers
+	AccumulatorKeeper   accumulatorkeeper.Keeper
 	AccountKeeper       authkeeper.AccountKeeper
 	BankKeeper          bankkeeper.Keeper
 	CapabilityKeeper    *capabilitykeeper.Keeper
@@ -275,7 +282,7 @@ func NewSimApp(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, group.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, icacontrollertypes.StoreKey, icahosttypes.StoreKey, capabilitytypes.StoreKey,
-		authzkeeper.StoreKey, ibcfeetypes.StoreKey,
+		authzkeeper.StoreKey, ibcfeetypes.StoreKey, accumulatortypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -323,10 +330,15 @@ func NewSimApp(
 	stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec, keys[stakingtypes.StoreKey], app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName),
 	)
+
+	accumulatorKeeper := accumulatorkeeper.NewKeeper(
+		appCodec, keys[accumulatortypes.StoreKey], keys[accumulatortypes.MemStoreKey], app.AccountKeeper, app.BankKeeper)
+
 	app.MintKeeper = mintkeeper.NewKeeper(
 		appCodec, keys[minttypes.StoreKey], app.GetSubspace(minttypes.ModuleName), &stakingKeeper,
-		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
+		app.AccountKeeper, app.BankKeeper, accumulatorKeeper, authtypes.FeeCollectorName,
 	)
+
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec, keys[distrtypes.StoreKey], app.GetSubspace(distrtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
 		&stakingKeeper, authtypes.FeeCollectorName,
@@ -530,7 +542,7 @@ func NewSimApp(
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
 		groupmodule.NewAppModule(appCodec, app.GroupKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil),
+		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
@@ -596,7 +608,7 @@ func NewSimApp(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil),
+		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
