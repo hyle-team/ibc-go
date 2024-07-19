@@ -151,7 +151,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0 // indirect
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
@@ -169,7 +169,7 @@ require (
 )
 
 replace (
-	github.com/cosmos/cosmos-sdk => github.com/hyle-team/cosmos-sdk v0.46.14
+	github.com/cosmos/cosmos-sdk => github.com/hyle-team/cosmos-sdk v0.46.15
 
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.28
